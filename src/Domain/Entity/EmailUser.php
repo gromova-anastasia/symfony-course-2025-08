@@ -4,7 +4,7 @@ namespace App\Domain\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Table(name: '`email_user`')]
+#[ORM\Table(name: 'email_user')]
 #[ORM\Entity]
 class EmailUser extends User
 {

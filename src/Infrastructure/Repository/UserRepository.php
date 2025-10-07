@@ -18,12 +18,6 @@ class UserRepository extends AbstractRepository
         return $this->store($user);
     }
 
-    public function remove(User $user): void
-    {
-        $user->setDeletedAt();
-        $this->flush();
-    }
-
     public function subscribeUser(User $author, User $follower): void
     {
         $author->addFollower($follower);
@@ -135,6 +129,12 @@ class UserRepository extends AbstractRepository
         return $queryBuilder->executeQuery()->fetchAllNumeric();
     }
 
+    public function remove(User $user): void
+    {
+        $user->setDeletedAt();
+        $this->flush();
+    }
+
     public function removeInFuture(User $user, DateInterval $dateInterval): void
     {
         $user->setDeletedAtInFuture($dateInterval);
@@ -151,5 +151,13 @@ class UserRepository extends AbstractRepository
             $filters->disable('soft_delete_filter');
         }
         return $this->entityManager->getRepository(User::class)->findBy(['login' => $name]);
+    }
+
+    /**
+     * @return User[]
+     */
+    public function findAll(): array
+    {
+        return $this->entityManager->getRepository(User::class)->findAll();
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Domain\Entity;
 
-use App\Domain\Entity\User;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Table(name: 'phone_user')]
