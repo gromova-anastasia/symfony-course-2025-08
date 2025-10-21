@@ -3,11 +3,14 @@
 namespace App\Domain\Entity;
 
 use App\Domain\ValueObject\CommunicationChannelEnum;
+use App\Domain\ValueObject\RoleEnum;
 use DateInterval;
 use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Table(name: '`user`')]
 #[ORM\Entity]
@@ -21,7 +24,8 @@ use Doctrine\ORM\Mapping as ORM;
     ]
 )]
 #[ORM\UniqueConstraint(name: 'user__login__uniq', columns: ['login'], options: ['where' => '(deleted_at IS NULL)'])]
-class User implements EntityInterface, HasMetaTimestampsInterface, SoftDeletableInterface, SoftDeletableInFutureInterface
+class User implements EntityInterface, HasMetaTimestampsInterface, SoftDeletableInterface,
+                      SoftDeletableInFutureInterface, UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Column(name: 'id', type: 'bigint', unique: true)]
     #[ORM\Id]
@@ -70,6 +74,9 @@ class User implements EntityInterface, HasMetaTimestampsInterface, SoftDeletable
     #[ORM\Column(type: 'boolean', nullable: false)]
     private bool $isActive;
 
+    #[ORM\Column(type: 'json', length: 1024, nullable: false)]
+    private array $roles = [];
+
     public function __construct()
     {
         $this->tweets = new ArrayCollection();
@@ -79,42 +86,26 @@ class User implements EntityInterface, HasMetaTimestampsInterface, SoftDeletable
         $this->subscriptionFollowers = new ArrayCollection();
     }
 
-    public function getId(): int
+    public function getCreatedAt(): DateTime
     {
-        return $this->id;
-    }
-
-    public function setId(int $id): void
-    {
-        $this->id = $id;
-    }
-
-    public function getLogin(): string
-    {
-        return $this->login;
-    }
-
-    public function setLogin(string $login): void
-    {
-        $this->login = $login;
-    }
-
-    public function getCreatedAt(): DateTime {
         return $this->createdAt;
     }
 
     #[ORM\PrePersist]
-    public function setCreatedAt(): void {
+    public function setCreatedAt(): void
+    {
         $this->createdAt = new DateTime();
     }
 
-    public function getUpdatedAt(): DateTime {
+    public function getUpdatedAt(): DateTime
+    {
         return $this->updatedAt;
     }
 
     #[ORM\PrePersist]
     #[ORM\PreUpdate]
-    public function setUpdatedAt(): void {
+    public function setUpdatedAt(): void
+    {
         $this->updatedAt = new DateTime();
     }
 
@@ -245,5 +236,52 @@ class User implements EntityInterface, HasMetaTimestampsInterface, SoftDeletable
                 $this->subscriptionAuthors->toArray()
             ),
         ];
+    }
+
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    public function setId(int $id): void
+    {
+        $this->id = $id;
+    }
+
+    public function getLogin(): string
+    {
+        return $this->login;
+    }
+
+    public function setLogin(string $login): void
+    {
+        $this->login = $login;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+        // guarantee every user at least has ROLE_USER
+        $roles[] = RoleEnum::ROLE_USER->value;
+
+        return array_unique($roles);
+    }
+
+    public function setRoles(array $roles): void
+    {
+        $this->roles = $roles;
+    }
+
+    public function eraseCredentials(): void
+    {
+        // TODO: Implement eraseCredentials() method.
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->login;
     }
 }
