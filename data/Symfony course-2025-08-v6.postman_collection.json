@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "2c81ca2a-953b-48c5-9339-132af46b34ba",
-		"name": "Symfony course-2024-07",
+		"_postman_id": "2de69dd7-8359-494b-be66-4d082fe4fa07",
+		"name": "Symfony course-2025-08-v6",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "30057528"
+		"_exporter_id": "9670063"
 	},
 	"item": [
 		{
@@ -47,6 +47,33 @@
 						"api",
 						"v1",
 						"user"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add subscription",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{host}}/api/v1/create-subscription/1/2",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"create-subscription",
+						"1",
+						"2"
 					]
 				}
 			},
