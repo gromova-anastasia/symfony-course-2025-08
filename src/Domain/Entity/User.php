@@ -3,12 +3,14 @@
 namespace App\Domain\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GraphQl\Query;
+use ApiPlatform\Metadata\GraphQl\QueryCollection;
 use ApiPlatform\Metadata\Post;
 use App\Controller\Web\CreateUser\v2\Input\CreateUserDTO;
 use App\Controller\Web\CreateUser\v2\Output\CreatedUserDTO;
+use App\Domain\ApiPlatform\GraphQL\Resolver\UserCollectionResolver;
+use App\Domain\ApiPlatform\GraphQL\Resolver\UserResolver;
 use App\Domain\ApiPlatform\State\UserProcessor;
-use App\Domain\ApiPlatform\State\UserProviderDecorator;
 use App\Domain\ValueObject\CommunicationChannelEnum;
 use App\Domain\ValueObject\RoleEnum;
 use DateInterval;
@@ -31,9 +33,19 @@ use Symfony\Component\Security\Core\User\UserInterface;
     ]
 )]
 #[ORM\UniqueConstraint(name: 'user__login__uniq', columns: ['login'], options: ['where' => '(deleted_at IS NULL)'])]
-#[ApiResource]
+#[ApiResource(
+    graphQlOperations: [
+        new Query(),
+        new QueryCollection(),
+        new QueryCollection(resolver: UserCollectionResolver::class, name: 'protected'),
+        new Query(
+            resolver: UserResolver::class,
+            args: ['_id' => ['type' => 'Int'], 'login' => ['type' => 'String']],
+            name: 'protected'
+        ),
+    ]
+)]
 #[Post(input: CreateUserDTO::class, output: CreatedUserDTO::class, processor: UserProcessor::class)]
-#[Get(output: CreatedUserDTO::class, provider: UserProviderDecorator::class)]
 class User implements EntityInterface, HasMetaTimestampsInterface, SoftDeletableInterface,
                       SoftDeletableInFutureInterface, UserInterface, PasswordAuthenticatedUserInterface
 {
@@ -89,6 +101,9 @@ class User implements EntityInterface, HasMetaTimestampsInterface, SoftDeletable
 
     #[ORM\Column(type: 'string', length: 32, unique: true, nullable: true)]
     private ?string $token = null;
+
+    #[ORM\Column(type: 'boolean', nullable: true)]
+    private ?bool $isProtected;
 
     public function __construct()
     {
@@ -215,6 +230,61 @@ class User implements EntityInterface, HasMetaTimestampsInterface, SoftDeletable
         }
     }
 
+    /**
+     * @return string[]
+     */
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+        // guarantee every user at least has ROLE_USER
+        $roles[] = RoleEnum::ROLE_USER->value;
+
+        return array_unique($roles);
+    }
+
+    public function setRoles(array $roles): void
+    {
+        $this->roles = $roles;
+    }
+
+    public function getToken(): ?string
+    {
+        return $this->token;
+    }
+
+    public function setToken(?string $token): void
+    {
+        $this->token = $token;
+    }
+
+    public function isProtected(): bool
+    {
+        return $this->isProtected ?? false;
+    }
+
+    public function setIsProtected(bool $isProtected): void
+    {
+        $this->isProtected = $isProtected;
+    }
+
+    public function eraseCredentials(): void
+    {
+        // TODO: Implement eraseCredentials() method.
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->login;
+    }
+
+    /**
+     * @return Subscription[]
+     */
+    public function getSubscriptionFollowers(): array
+    {
+        return $this->subscriptionFollowers->toArray();
+    }
+
     public function toArray(): array
     {
         return [
@@ -269,42 +339,5 @@ class User implements EntityInterface, HasMetaTimestampsInterface, SoftDeletable
     public function setLogin(string $login): void
     {
         $this->login = $login;
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getRoles(): array
-    {
-        $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
-        $roles[] = RoleEnum::ROLE_USER->value;
-
-        return array_unique($roles);
-    }
-
-    public function setRoles(array $roles): void
-    {
-        $this->roles = $roles;
-    }
-
-    public function getToken(): ?string
-    {
-        return $this->token;
-    }
-
-    public function setToken(?string $token): void
-    {
-        $this->token = $token;
-    }
-
-    public function eraseCredentials(): void
-    {
-        // TODO: Implement eraseCredentials() method.
-    }
-
-    public function getUserIdentifier(): string
-    {
-        return $this->login;
     }
 }
