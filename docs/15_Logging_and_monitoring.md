@@ -8,7 +8,8 @@
 
 1. Входим в контейнер командой `docker exec -it php sh`. Дальнейшие команды выполняются из контейнера
 2. Устанавливаем пакет `symfony/monolog-bundle`
-3. Исправляем класс `App\Controller\Web\CreateUser\v2\Manager`
+3. Устанавливаем пакет `symfony/web-profiler-bundle`
+4. Исправляем класс `App\Controller\Web\CreateUser\v2\Manager`
     ```php
     <?php
     
@@ -24,13 +25,13 @@
     use App\Domain\ValueObject\CommunicationChannelEnum;
     use Psr\Log\LoggerInterface;
     
-    class Manager
+    readonly class Manager
     {
         public function __construct(
             /** @var ModelFactory<CreateUserModel> */
-            private readonly ModelFactory $modelFactory,
-            private readonly UserService $userService,
-            private readonly LoggerInterface $logger,
+            private ModelFactory $modelFactory,
+            private UserService $userService,
+            private LoggerInterface $logger,
         ) {
         }
     
@@ -76,7 +77,7 @@
         }
     }
     ```
-4. Выполняем запрос Add user v2 из Postman-коллекции v6 и проверяем, что логи попадают в файл `var/log/dev.log`
+5. Выполняем запрос Add user v2 из Postman-коллекции v6 и проверяем, что логи попадают в файл `var/log/dev.log`
 
 ### Настраиваем минимальный уровень логирования и убираем ненужные каналы
 
@@ -148,12 +149,12 @@
     use App\Domain\Service\UserService;
     use App\Domain\ValueObject\CommunicationChannelEnum;
     
-    class Manager
+    readonly class Manager
     {
         public function __construct(
             /** @var ModelFactory<CreateUserModel> */
-            private readonly ModelFactory $modelFactory,
-            private readonly UserService $userService,
+            private ModelFactory $modelFactory,
+            private UserService $userService,
         ) {
         }
     
@@ -199,13 +200,13 @@
     use App\Domain\Service\UserService;
     use Psr\Log\LoggerInterface;
     
-    class ManagerLoggerDecorator extends Manager
+    readonly class ManagerLoggerDecorator extends Manager
     {
         public function __construct(
             /** @var ModelFactory<CreateUserModel> */
-            private readonly ModelFactory $modelFactory,
-            private readonly UserService $userService,
-            private readonly LoggerInterface $logger,
+            private ModelFactory $modelFactory,
+            private UserService $userService,
+            private LoggerInterface $logger,
         ) {
             parent::__construct($this->modelFactory, $this->userService);
         }
@@ -264,11 +265,11 @@
     use App\Controller\Web\CreateUser\v2\Output\CreatedUserDTO;
     use Psr\Log\LoggerInterface;
     
-    class ManagerLoggerDecorator implements ManagerInterface
+    readonly class ManagerLoggerDecorator implements ManagerInterface
     {
         public function __construct(
-            private readonly ManagerInterface $manager,
-            private readonly LoggerInterface $logger,
+            private ManagerInterface $manager,
+            private LoggerInterface $logger,
         ) {
         }
     
@@ -315,11 +316,11 @@
     
     namespace App\Domain\Event;
     
-    class UserIsCreatedEvent
+    readonly class UserIsCreatedEvent
     {
         public function __construct(
-            public readonly int $id,
-            public readonly string $login,
+            public int $id,
+            public string $login,
         ) {
         }
     }
@@ -336,11 +337,11 @@
     use Psr\Log\LoggerInterface;
     use Symfony\Component\EventDispatcher\EventSubscriberInterface;
     
-    class UserEventSubscriber implements EventSubscriberInterface
+    readonly class UserEventSubscriber implements EventSubscriberInterface
     {
         public function __construct(
-            private readonly UserService $userService,
-            private readonly LoggerInterface $logger,
+            private UserService $userService,
+            private LoggerInterface $logger,
         ) {
         }
     
@@ -410,34 +411,41 @@
 
 1. Добавляем сервисы `elasticsearch` и `kibana` в `docker-compose.yml`
     ```yaml
-    elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:7.9.2
+        elasticsearch:
+        image: elasticsearch:9.2.0
         container_name: 'elasticsearch'
         environment:
-          - cluster.name=docker-cluster
-          - bootstrap.memory_lock=true
-          - discovery.type=single-node
-          - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+            - cluster.name=docker-cluster
+            - bootstrap.memory_lock=true
+            - discovery.type=single-node
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+            - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD}
         ulimits:
-          memlock:
-            soft: -1
-            hard: -1
+            memlock:
+                soft: -1
+                hard: -1
         ports:
-          - 9200:9200
-          - 9300:9300
+            - 9200:9200
+            - 9300:9300
 
     kibana:
-        image: docker.elastic.co/kibana/kibana:7.9.2
+        image: kibana:9.2.0
         container_name: 'kibana'
         depends_on:
-          - elasticsearch
+            - elasticsearch
         ports:
-          - 5601:5601
+            - 5601:5601
     ```
-2. Выходим из контейнера и запускаем новые контейнеры командой `docker-compose up -d`
-3. Заходим в контейнер командой `docker exec -it php sh`. Дальнейшие команды выполняются из контейнера
-4. Устанавливаем пакет `symfony/http-client`
-5. В файле `config/packages/monolog.yaml`
+2. Добавляем в .env новые переменные
+    ```bash
+    ELASTICSEARCH_USER=elastic
+    ELASTICSEARCH_PASSWORD=gpKUgKj84=AG8k6erd3b
+    ELASTICSEARCH_HOST=https://elasticsearch:9200
+    ```
+3. Выходим из контейнера и запускаем новые контейнеры командой `docker-compose up -d`
+4. Заходим в контейнер командой `docker exec -it php sh`. Дальнейшие команды выполняются из контейнера
+5. Устанавливаем пакет `symfony/http-client`
+6. В файле `config/packages/monolog.yaml`
     1. добавляем в `monolog.channels` новый канал `elasticsearch`
     2. Добавляем новый обработчик в секцию `monolog.handlers`
         ```yaml
@@ -446,23 +454,30 @@
             id: Symfony\Bridge\Monolog\Handler\ElasticsearchLogstashHandler
             channels: elasticsearch
         ```
-    3. Добавляем новые сервисы в секцию `services`:
+    3. Создаём файл `config/packages/http_client.yaml`
+    ```yaml
+    framework:
+        http_client:
+            default_options:
+                verify_peer: false
+                verify_host: false
+            scoped_clients:
+                es_client:
+                    base_uri: '%env(ELASTICSEARCH_HOST)%'
+                    auth_basic: '%env(ELASTICSEARCH_USER)%:%env(ELASTICSEARCH_PASSWORD)%'
+    ``` 
+    4. Добавляем новые сервисы в секцию `services`:
         ```yaml
-        Psr\Log\NullLogger:
-            class: Psr\Log\NullLogger
-      
-        http_client_without_logs:
-            class: Symfony\Component\HttpClient\CurlHttpClient
-            calls:
-                - [setLogger, ['@Psr\Log\NullLogger']]
-        
         Symfony\Bridge\Monolog\Handler\ElasticsearchLogstashHandler:
             arguments:
-                - 'http://elasticsearch:9200'
+                - '%env(ELASTICSEARCH_HOST)%'
                 - 'monolog'
-                - '@http_client_without_logs'
+                - '@es_client'
+                - DEBUG
+                - true
+                - 9.2.0
         ```
-6. В классе `App\Domain\EventSubscriber\UserEventSubscriber`
+7. В классе `App\Domain\EventSubscriber\UserEventSubscriber`
     1. Изменяем название параметра `$logger` на `$elasticsearchLogger`
     2. исправляем метод `onUserIsCreated`
         ```php
@@ -471,10 +486,17 @@
             $this->elasticsearchLogger->info("User is created: id {$event->id}, login {$event->login}");
         }
         ```
-7. Выполняем запрос Add user v2 из Postman-коллекции v6
-8. Заходим в Kibana `http://localhost:5601`.
-9. Заходим в Stack Management -> Index Patterns
-10. Создаём index pattern на базе индекса `monolog`, переходим в `Discover`, видим наше сообщение
+8. Выполняем запрос Add user v2 из Postman-коллекции v6
+9. Из заголовков ответа берём ссылку на профайлер и смотрим запрос к эластику.
+10. Заходим в Kibana `http://localhost:5601`.
+11. В консоли вне контейнера выполняем `docker compose exec -it elasticsearch bin/elasticsearch-create-enrollment-token --scope kibana`
+12. Копируем полученный токен идём в браузер и вставляем его.
+13. Возвращаемся в консоль и вводим `docker compose exec -it kibana bin/kibana-verification-code`
+14. Копируем полученный код в кибану
+15. Заходим в Discover
+16. В левом верхнем углу разворачиваем `Data view`
+17. В правом нижнем углу менюшки `Create a data view`
+18. Создаём index pattern на базе индекса `monolog`
 
 ## Grafana для сбора метрик, интеграция с Graphite
 
