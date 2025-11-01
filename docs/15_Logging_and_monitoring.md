@@ -411,7 +411,7 @@
 
 1. Добавляем сервисы `elasticsearch` и `kibana` в `docker-compose.yml`
     ```yaml
-        elasticsearch:
+    elasticsearch:
         image: elasticsearch:9.2.0
         container_name: 'elasticsearch'
         environment:
@@ -575,7 +575,7 @@
        ```
 9. Выполняем несколько раз запрос Add user v2 из Postman-коллекции v6 и проверяем, что в Graphite появляются события
 10. Настраиваем график в Grafana
-    1. добавляем в Data source с типом Graphite и адресом graphite:80
+    1. добавляем в Data source с типом Graphite и адресом `graphite:80`
     2. добавляем новый Dashboard
     3. на дашборде добавляем панель с запросом в Graphite счётчика `stats_counts.my_app.user_created`
     4. видим график с запросами
