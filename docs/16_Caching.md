@@ -219,10 +219,15 @@
 6. Выполняем `keys *`, видим, что кэш пустой
 
 ### Подключаем кэш на уровне приложения
-
-1. Заходим в контейнер командой `docker exec -it php sh`
-2. Обновляем пакет `symfony/cache` (минимальная подходящая нам версия 7.1.4)
-3. Добавляем класс `App\Domain\Model\TweetModel`
+1. Добавляем в `composer.json` в секцию `config`
+```json
+"audit": {
+   "block-insecure": false
+}
+```
+2. Заходим в контейнер командой `docker exec -it php sh`
+3. Обновляем пакет `symfony/cache` (минимальная подходящая нам версия 7.1.4)
+4. Добавляем класс `App\Domain\Model\TweetModel`
     ```php
     <?php
     
@@ -241,7 +246,7 @@
         }
     }
     ``` 
-4. Добавляем интерфейс `App\Domain\Repository\TweetRepositoryInterface`
+5. Добавляем интерфейс `App\Domain\Repository\TweetRepositoryInterface`
     ```php
     <?php
     
@@ -260,7 +265,7 @@
         public function getTweetsPaginated(int $page, int $perPage): array;
     }
     ```
-5. Добавляем класс `App\Infrastructure\Repository\TweetRepositoryCacheDecorator`
+6. Добавляем класс `App\Infrastructure\Repository\TweetRepositoryCacheDecorator`
     ```php
     <?php
     
@@ -317,12 +322,12 @@
         }
     }
     ```
-6. В файле `config/services.yaml` добавляем новый биндинг
+7. В файле `config/services.yaml` добавляем новый биндинг
     ```yaml
     App\Domain\Repository\TweetRepositoryInterface:
         alias: App\Infrastructure\Repository\TweetRepositoryCacheDecorator
     ```
-7. Исправляем класс `App\Domain\Service\TweetService`
+8. Исправляем класс `App\Domain\Service\TweetService`
     ```php
     <?php
     
@@ -359,7 +364,7 @@
         }
     }
     ```
-8. Исправляем класс `App\Controller\Web\GetTweet\v1\Manager`
+9. Исправляем класс `App\Controller\Web\GetTweet\v1\Manager`
     ```php
     <?php
     
@@ -392,9 +397,9 @@
         }
     }
     ```
-9. Выполняем запрос Get tweet из Postman-коллекции v7 для прогрева кэша
-10. В Redis ищем ключи от приложения командой `keys *tweets*`
-11. Выводим найденный ключ командой `get KEY`, где `KEY` - найденный ключ
+10. Выполняем запрос Get tweet из Postman-коллекции v7 для прогрева кэша
+11. В Redis ищем ключи от приложения командой `keys *tweets*`
+12. Выводим найденный ключ командой `get KEY`, где `KEY` - найденный ключ
 
 ### Подсчитываем количество cache hit/miss
 
