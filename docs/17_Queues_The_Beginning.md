@@ -438,7 +438,7 @@
    
        public function sendAddFollowersMessage(AddFollowersDTO $addFollowersDTO): bool
        {   
-           return $this->rabbitMqBus->publishToExchange(AmqpExchangeEnum::AddFollowers, $messages);
+           return $this->rabbitMqBus->publishToExchange(AmqpExchangeEnum::AddFollowers, $addFollowersDTO);
        }
    }
   
